@@ -1,35 +1,70 @@
 import streamlit as st
 import requests
 
-st.title("Buscador de Pisos Inteligente 🏠🤖")
+st.title("Asistente Inmobiliario Inteligente 🏠🤖")
 
-st.write("Describe qué piso buscas y el asistente te devolverá opciones y un resumen inteligente.")
+st.write("Usa las herramientas de búsqueda de pisos y scoring de candidatos.")
 
-# Input del usuario
-busqueda = st.text_area("¿Qué piso estás buscando?")
+# URLs de n8n
+WEBHOOK_M4 = "https://gabrieldones.app.n8n.cloud/webhook/buscar-piso"
+WEBHOOK_M5 = "https://gabrieldones.app.n8n.cloud/webhook/scoring-candidato"
 
-# Webhook de producción n8n
-WEBHOOK_URL = "https://gabrieldones.app.n8n.cloud/webhook/buscar-piso"
+
+# -----------------------------------
+# M4 - Buscar piso
+# -----------------------------------
+st.header("🔎 M4 – Buscador de pisos")
+
+busqueda = st.text_area("¿Qué piso estás buscando?", key="m4_input")
 
 if st.button("Buscar piso"):
     if not busqueda.strip():
         st.error("Por favor escribe una búsqueda.")
     else:
-        st.info("Buscando...")
+        st.info("Buscando pisos…")
+        response = requests.post(WEBHOOK_M4, json={"busqueda": busqueda})
 
-        try:
-            # Mandar la búsqueda a n8n
-            response = requests.post(WEBHOOK_URL, json={"busqueda": busqueda})
+        if response.status_code == 200:
+            st.success("Resultados encontrados:")
+            st.write(response.text)
+        else:
+            st.error("Error al conectar con el servidor.")
+            st.write(response.text)
 
-            if response.status_code == 200:
-                resultado = response.text  # n8n responde en texto
-                st.success("Aquí tienes las opciones encontradas:")
-                st.write(resultado)
-            else:
-                st.error(f"Error del servidor: {response.status_code}")
-                st.write(response.text)
 
-        except Exception as e:
-            st.error("Error al conectar con n8n.")
-            st.write(str(e))
+# -----------------------------------
+# M5 – Scoring de candidato
+# -----------------------------------
+st.header("🧩 M5 – Scoring de candidato")
+
+nombre = st.text_input("Nombre del candidato", key="nombre_input")
+ingresos = st.number_input("Ingresos mensuales (€)", min_value=0, key="ingresos_input")
+profesion = st.text_input("Profesión", key="profesion_input")
+mascotas = st.selectbox("¿Mascotas?", ["No", "Sí"], key="mascotas_input")
+estabilidad = st.selectbox("Estabilidad laboral", ["Indefinido", "Temporal", "Autónomo", "Paro"], key="estabilidad_input")
+fumador = st.selectbox("¿Fumador?", ["No", "Sí"], key="fumador_input")
+alquiler_max = st.number_input("Alquiler máximo que puede pagar (€)", min_value=0, key="alquiler_input")
+
+if st.button("Calcular scoring"):
+    datos = {
+        "nombre": nombre,
+        "ingresos": ingresos,
+        "profesion": profesion,
+        "mascotas": mascotas,
+        "estabilidad_laboral": estabilidad,
+        "fumador": fumador,
+        "alquiler_maximo": alquiler_max
+    }
+
+    st.info("Calculando scoring…")
+    response = requests.post(WEBHOOK_M5, json=datos)
+
+    try:
+        resultado = response.json()
+        st.success("Resultado del scoring:")
+        st.json(resultado)
+    except:
+        st.error("El servidor devolvió un formato inesperado.")
+        st.write(response.text)
+
 
