@@ -26,7 +26,15 @@ if st.button("Buscar piso"):
 
         if response.status_code == 200:
             st.success("Resultados encontrados:")
-            st.write(response.text)
+
+            # ✅ CORRECCIÓN PARA MOSTRAR SOLO EL TEXTO DEL MODELO
+            try:
+                data = response.json()
+                texto = data["output"][0]["content"][0]["text"]
+                st.write(texto)
+            except:
+                st.write(response.text)
+
         else:
             st.error("Error al conectar con el servidor.")
             st.write(response.text)
@@ -66,5 +74,3 @@ if st.button("Calcular scoring"):
     except:
         st.error("El servidor devolvió un formato inesperado.")
         st.write(response.text)
-
-
