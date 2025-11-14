@@ -1,5 +1,7 @@
 import streamlit as st
 import requests
+import json
+import re
 
 st.title("Asistente Inmobiliario Inteligente 🏠🤖")
 
@@ -27,7 +29,7 @@ if st.button("Buscar piso"):
         if response.status_code == 200:
             st.success("Resultados encontrados:")
 
-            # ✅ CORRECCIÓN PARA MOSTRAR SOLO EL TEXTO DEL MODELO
+            # Mostrar solo texto limpio del modelo
             try:
                 data = response.json()
                 texto = data["output"][0]["content"][0]["text"]
@@ -68,9 +70,24 @@ if st.button("Calcular scoring"):
     response = requests.post(WEBHOOK_M5, json=datos)
 
     try:
-        resultado = response.json()
+        # 1. Capturar la respuesta JSON completa
+        data = response.json()
+
+        # 2. Extraer el texto generado por el modelo
+        texto = data["data"]["output"][0]["content"][0]["text"]
+
+        # 3. Limpiar bloques ```json ... ```
+        texto_limpio = texto.replace("```json", "").replace("```", "").strip()
+
+        # 4. Convertir a JSON válido
+        resultado_json = json.loads(texto_limpio)
+
+        # 5. Mostrar JSON bonito
         st.success("Resultado del scoring:")
-        st.json(resultado)
-    except:
+        st.json(resultado_json)
+
+    except Exception as e:
         st.error("El servidor devolvió un formato inesperado.")
+        st.write("Respuesta completa (debug):")
         st.write(response.text)
+        st.write(str(e))
